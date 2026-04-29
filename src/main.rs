@@ -11,12 +11,12 @@ mod material;
 use std::io;
 use std::rc::Rc;
 use color::Color;
-use hittable::{HitRecord, Hittable};
+use hittable::Hittable;
 use hittable_list::HittableList;
 use material::{Lambertian, Metal, Dielectric};
 use ray::Ray;
 use sphere::Sphere;
-use vec3::{Point3, Vec3};
+use vec3::{Point3};
 use camera::Camera;
 
 fn ray_color(r: &Ray, world: &dyn Hittable, depth: i32) -> Color {
@@ -24,17 +24,9 @@ fn ray_color(r: &Ray, world: &dyn Hittable, depth: i32) -> Color {
         return Color::new(0.0, 0.0, 0.0);
     }
     
-    let mut rec = HitRecord::new();
-    if world.hit(r, 0.001, common::INFINITY, &mut rec) {
-        let mut attenuation = Color::default();
-        let mut scattered = Ray::default();
-        if rec
-            .mat
-            .as_ref()
-            .unwrap()
-            .scatter(r, &rec, &mut attenuation, &mut scattered)
-        {
-            return attenuation * ray_color(&scattered, world, depth - 1);
+    if let Some(hit_rec) = world.hit(r, 0.001, common::INFINITY) {
+        if let Some(scatter_rec) = hit_rec.mat.scatter(r, &hit_rec) {
+            return scatter_rec.attenuation * ray_color(&scatter_rec.scattered, world, depth - 1);
         }
         return Color::new(0.0, 0.0, 0.0);
     }
