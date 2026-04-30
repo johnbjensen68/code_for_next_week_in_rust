@@ -1,11 +1,11 @@
 use crate::hittable::{HitRecord, Hittable};
 use crate::material::Material;
 use crate::ray::Ray;
-use crate::vec3::{self, Point3};
+use crate::vec3::{self, Point3, Vec3};
 use std::rc::Rc;
 
 pub struct Sphere {
-    center: Point3,
+    center: Ray,
     radius: f64,
     mat: Rc<dyn Material>,
 }
@@ -13,7 +13,15 @@ pub struct Sphere {
 impl Sphere {
     pub fn new(cen: Point3, r: f64, m: Rc<dyn Material>) -> Sphere {
         Sphere {
-            center: cen,
+            center: Ray::new(cen, Vec3::new(0.0,0.0,0.0), 0.0),
+            radius: r,
+            mat: m,
+        }
+    }
+
+    pub fn new_moving(cen1: Point3, cen2: Point3, r: f64, m: Rc<dyn Material>) -> Sphere {
+        Sphere {
+            center: Ray::new(cen1, cen2 - cen1, 0.0),
             radius: r,
             mat: m,
         }
@@ -22,7 +30,8 @@ impl Sphere {
  
 impl Hittable for Sphere {
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
-        let oc = r.origin() - self.center;
+        let current_center = self.center.at(r.time());
+        let oc =  r.origin() - current_center;
         let a = r.direction().length_squared();
         let half_b = vec3::dot(oc, r.direction());
         let c = oc.length_squared() - self.radius * self.radius;
@@ -49,7 +58,7 @@ impl Hittable for Sphere {
             normal: Default::default(),
             front_face: Default::default(),
         };
-        let outward_normal = (rec.p - self.center) / self.radius;
+        let outward_normal = (rec.p - current_center) / self.radius;
         rec.set_face_normal(r, outward_normal);
         Some(rec)
     }

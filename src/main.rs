@@ -60,7 +60,8 @@ fn random_scene() -> HittableList {
                     // Diffuse
                     let albedo = Color::random() * Color::random();
                     let sphere_material = Rc::new(Lambertian::new(albedo));
-                    world.add(Box::new(Sphere::new(center, 0.2, sphere_material)));
+                    let center2 = center + vec3::Vec3::new(0.0, common::random_double_range(0.0,0.5), 0.0);
+                    world.add(Box::new(Sphere::new_moving(center, center2, 0.2, sphere_material)));
                 } else if choose_mat < 0.95 {
                     // Metal
                     let albedo = Color::random_range(0.5, 1.0);
@@ -102,24 +103,13 @@ fn random_scene() -> HittableList {
 
 fn main() {
     const ASPECT_RATIO: f64 = 3.0 / 2.0;
-    const IMAGE_WIDTH: i32 = 800;
+    const IMAGE_WIDTH: i32 = 400;
     const IMAGE_HEIGHT: i32 = (IMAGE_WIDTH as f64 / ASPECT_RATIO) as i32;
-    const SAMPLES_PER_PIXEL: i32 = 500;
+    const SAMPLES_PER_PIXEL: i32 = 100;
     const MAX_DEPTH: i32 = 50;
 
     // World
     let world = random_scene();
-
-
-    // let viewport_height = 2.0;
-    // let viewport_width = ASPECT_RATIO * viewport_height;
-    // let focal_length = 1.0;
- 
-    // let origin = Point3::new(0.0, 0.0, 0.0);
-    // let horizontal = Vec3::new(viewport_width, 0.0, 0.0);
-    // let vertical = Vec3::new(0.0, viewport_height, 0.0);
-    // let lower_left_corner =
-    //     origin - horizontal / 2.0 - vertical / 2.0 - Vec3::new(0.0, 0.0, focal_length);
 
     let lookfrom = Point3::new(13.0, 2.0, 3.0);
     let lookat = Point3::new(0.0, 0.0, 0.0);
