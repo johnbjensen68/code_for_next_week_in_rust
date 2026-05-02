@@ -40,6 +40,10 @@ impl Vec3 {
         self.e[2]
     }
  
+    pub fn get_index(&self, n: usize) -> f64 {
+        self.e[n]
+    }
+
     pub fn length(&self) -> f64 {
         f64::sqrt(self.length_squared())
     }

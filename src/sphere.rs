@@ -2,28 +2,38 @@ use crate::hittable::{HitRecord, Hittable};
 use crate::material::Material;
 use crate::ray::Ray;
 use crate::vec3::{self, Point3, Vec3};
+use crate::aabb::Aabb;
 use std::rc::Rc;
 
 pub struct Sphere {
     center: Ray,
     radius: f64,
     mat: Rc<dyn Material>,
+    bbox: Aabb,
 }
  
 impl Sphere {
     pub fn new(cen: Point3, r: f64, m: Rc<dyn Material>) -> Sphere {
+        let rvec = Vec3::new(r, r, r);
+        let bbox = Aabb::from_points(cen - rvec, cen + rvec);
         Sphere {
             center: Ray::new(cen, Vec3::new(0.0,0.0,0.0), 0.0),
             radius: r,
             mat: m,
+            bbox: bbox
         }
     }
 
     pub fn new_moving(cen1: Point3, cen2: Point3, r: f64, m: Rc<dyn Material>) -> Sphere {
+        let rvec = Vec3::new(r, r, r);
+        let box1 = Aabb::from_points(cen1 - rvec, cen1 + rvec);
+        let box2 = Aabb::from_points(cen2 - rvec, cen2 + rvec);
+        let bbox = Aabb::from_aabbs(box1, box2);
         Sphere {
             center: Ray::new(cen1, cen2 - cen1, 0.0),
             radius: r,
             mat: m,
+            bbox: bbox
         }
     }
 }
@@ -62,4 +72,8 @@ impl Hittable for Sphere {
         rec.set_face_normal(r, outward_normal);
         Some(rec)
     }
+
+     fn bounding_box(&self) -> Aabb {
+        self.bbox
+     }
 }

@@ -1,9 +1,12 @@
 use crate::hittable::{HitRecord, Hittable};
 use crate::ray::Ray;
- 
+use crate::aabb::Aabb;
+use std::rc::Rc;
+
 #[derive(Default)]
 pub struct HittableList {
-    objects: Vec<Box<dyn Hittable>>,
+    pub objects: Vec<Rc<dyn Hittable>>,
+    bbox: Aabb,
 }
  
 impl HittableList {
@@ -12,7 +15,8 @@ impl HittableList {
     }
  
     pub fn add(&mut self, object: Box<dyn Hittable>) {
-        self.objects.push(object);
+        self.bbox = Aabb::from_aabbs(self.bbox, object.bounding_box());
+        self.objects.push(Rc::from(object));
     }
 }
  
@@ -29,5 +33,9 @@ impl Hittable for HittableList {
         }
  
         temp_rec
+    }
+
+    fn bounding_box(&self) -> Aabb {
+        self.bbox
     }
 }

@@ -7,6 +7,9 @@ mod ray;
 mod sphere;
 mod camera;
 mod material;
+mod interval;
+mod aabb;
+mod bvh;
 
 use std::io;
 use std::rc::Rc;
@@ -17,6 +20,7 @@ use material::{Lambertian, Metal, Dielectric};
 use ray::Ray;
 use sphere::Sphere;
 use vec3::{Point3};
+use bvh::BvhNode;
 use camera::Camera;
 
 fn ray_color(r: &Ray, world: &dyn Hittable, depth: i32) -> Color {
@@ -109,7 +113,8 @@ fn main() {
     const MAX_DEPTH: i32 = 50;
 
     // World
-    let world = random_scene();
+    let world = BvhNode::new(random_scene());
+    //let world = random_scene();
 
     let lookfrom = Point3::new(13.0, 2.0, 3.0);
     let lookat = Point3::new(0.0, 0.0, 0.0);
