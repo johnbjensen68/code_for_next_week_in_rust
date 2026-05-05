@@ -3,7 +3,6 @@ use crate::aabb::Aabb;
 use crate::hittable_list::HittableList;
 use crate::interval::Interval;
 use crate::ray::Ray;
-use crate::common;
 use std::rc::Rc;
 use std::cmp::Ordering;
 
@@ -25,7 +24,13 @@ impl BvhNode {
         BvhNode::internal_new(&mut hl.objects, 0, l)
     }
     pub fn internal_new(objects: &mut Vec<Rc<dyn Hittable>>, start: usize, end: usize) -> Self {
-        let axis = common::random_int(0, 2) as usize;
+        // Build the bounding box of the span of source objects.
+        let mut bbox = crate::aabb::EMPTY;
+        for i in start..end {
+            bbox = Aabb::from_aabbs(bbox, objects[i].bounding_box());
+        }
+ 
+        let axis = bbox.longest_axis();
         let object_span = end - start;
         let (left, right): (Rc<dyn Hittable>, Rc<dyn Hittable>) = if object_span == 1 {
             (objects[start].clone(), objects[start].clone())
