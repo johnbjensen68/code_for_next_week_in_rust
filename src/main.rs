@@ -11,6 +11,7 @@ mod interval;
 mod aabb;
 mod bvh;
 mod texture;
+mod perlin;
 
 use std::rc::Rc;
 use color::Color;
@@ -21,7 +22,7 @@ use vec3::{Point3};
 use bvh::BvhNode;
 use camera::Camera;
 use texture::CheckerTexture;
-
+use texture::NoiseTexture;
 use crate::{texture::ImageTexture, vec3::Vec3};
 
 
@@ -198,11 +199,40 @@ fn earth() {
     cam.render(&world);
 }
 
+fn perlin_spheres() {
+    let mut world = HittableList::new();
+ 
+    let pertext = Rc::new(NoiseTexture::new(4.0));
+    world.add(Box::new(Sphere::new(
+        Point3::new(0.0, -1000.0, 0.0), 1000.0,
+        Rc::new(Lambertian::from_texture(pertext.clone())),
+    )));
+    world.add(Box::new(Sphere::new(
+        Point3::new(0.0, 2.0, 0.0), 2.0,
+        Rc::new(Lambertian::from_texture(pertext)),
+    )));
+
+    let cam = Camera::new(
+        400,
+        100,
+        50,
+        Point3::new(13.0, 2.0, 3.0),
+        Point3::new(0.0, 0.0, 0.0),
+        Vec3::new(0.0, 1.0, 0.0),
+        20.0,
+        16.0 / 9.0,
+        0.1,
+        10.0);
+
+    cam.render(&world);
+}
+
 fn main() {
-    match 3 {
+    match 4 {
         1 => bouncing_spheres(),
         2 => checkered_spheres(),
         3 => earth(),
+        4 => perlin_spheres(),
         _ => {}
     }
 }

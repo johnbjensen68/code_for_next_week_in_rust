@@ -3,6 +3,7 @@ use image::RgbImage;
 use crate::color::Color;
 use crate::vec3::Point3;
 use std::rc::Rc;
+use crate::perlin;
 
 pub trait Texture {
     fn value(&self, u: f64, v: f64, p: &Point3) -> Color;
@@ -92,5 +93,23 @@ impl Texture for ImageTexture {
             scale * pixel[1] as f64,
             scale * pixel[2] as f64,
         )
+    }
+}
+
+pub struct NoiseTexture {
+    noise: perlin::Perlin,
+    scale: f64,
+}
+ 
+impl NoiseTexture {
+    pub fn new(scale: f64) -> Self {
+        Self { noise: perlin::Perlin::new(), scale }
+    }
+}
+ 
+impl Texture for NoiseTexture {
+    fn value(&self, _u: f64, _v: f64, p: &Point3) -> Color {
+        let noise_val = 1.0 + (self.scale * p.z() + 10.0 * self.noise.turbulence(p, 7)).sin();
+        Color::new(1.0, 1.0, 1.0) * 0.5 * noise_val
     }
 }
