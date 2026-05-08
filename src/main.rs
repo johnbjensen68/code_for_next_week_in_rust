@@ -10,39 +10,37 @@ mod material;
 mod interval;
 mod aabb;
 mod bvh;
+mod texture;
 
-use std::io;
 use std::rc::Rc;
 use color::Color;
-use hittable::Hittable;
 use hittable_list::HittableList;
 use material::{Lambertian, Metal, Dielectric};
-use ray::Ray;
 use sphere::Sphere;
 use vec3::{Point3};
 use bvh::BvhNode;
 use camera::Camera;
+use texture::CheckerTexture;
 
-fn ray_color(r: &Ray, world: &dyn Hittable, depth: i32) -> Color {
-    if depth <= 0 {
-        return Color::new(0.0, 0.0, 0.0);
-    }
-    
-    if let Some(hit_rec) = world.hit(r, 0.001, common::INFINITY) {
-        if let Some(scatter_rec) = hit_rec.mat.scatter(r, &hit_rec) {
-            return scatter_rec.attenuation * ray_color(&scatter_rec.scattered, world, depth - 1);
-        }
-        return Color::new(0.0, 0.0, 0.0);
-    }
+use crate::{texture::ImageTexture, vec3::Vec3};
 
-    let unit_direction = vec3::unit_vector(r.direction());
-    let t = 0.5 * (unit_direction.y() + 1.0);
-    (1.0 - t) * Color::new(1.0, 1.0, 1.0) + t * Color::new(0.5, 0.7, 1.0)
-}
+
 
 fn random_scene() -> HittableList {
     let mut world = HittableList::new();
  
+     let checker = Rc::new(CheckerTexture::from_colors(
+        0.32,
+        Color::new(0.2, 0.3, 0.1),
+        Color::new(0.9, 0.9, 0.9),
+    ));
+    let sp1 = Sphere::new(
+        Point3::new(0.0, -1000.0, 0.0),
+        1000.0,
+        Rc::new(Lambertian::from_texture(checker)),
+    );
+    world.add(Box::new(sp1));
+
     let ground_material = Rc::new(Lambertian::new(Color::new(0.5, 0.5, 0.5)));
     world.add(Box::new(Sphere::new(
         Point3::new(0.0, -1000.0, 0.0),
@@ -105,12 +103,8 @@ fn random_scene() -> HittableList {
     world
 }
 
-fn main() {
+fn bouncing_spheres() {
     const ASPECT_RATIO: f64 = 3.0 / 2.0;
-    const IMAGE_WIDTH: i32 = 400;
-    const IMAGE_HEIGHT: i32 = (IMAGE_WIDTH as f64 / ASPECT_RATIO) as i32;
-    const SAMPLES_PER_PIXEL: i32 = 100;
-    const MAX_DEPTH: i32 = 50;
 
     // World
     let world = BvhNode::new(random_scene());
@@ -122,7 +116,14 @@ fn main() {
     let dist_to_focus = 10.0;
     let aperture = 0.1;
 
+    const IMAGE_WIDTH: usize = 400;
+    const SAMPLES_PER_PIXEL: i32 = 100;
+    const MAX_DEPTH: i32 = 50;
+
     let cam = Camera::new(
+        IMAGE_WIDTH,
+        SAMPLES_PER_PIXEL,
+        MAX_DEPTH,
         lookfrom,
         lookat,
         vup,
@@ -132,21 +133,76 @@ fn main() {
         dist_to_focus,
     );
 
-    print!("P3\n{} {}\n255\n", IMAGE_WIDTH, IMAGE_HEIGHT);
+    cam.render(&world);
+}
 
-    for j in (0..IMAGE_HEIGHT).rev() {
-        eprint!("\rScanlines remaining: {} ", j);
-        for i in 0..IMAGE_WIDTH {
-            let mut pixel_color = Color::new(0.0, 0.0, 0.0);
+fn checkered_spheres() {
+    let mut world = HittableList::new();
+ 
+    let checker = Rc::new(CheckerTexture::from_colors(
+        0.32,
+        Color::new(0.2, 0.3, 0.1),
+        Color::new(0.9, 0.9, 0.9),
+    ));
+    world.add(Box::new(Sphere::new(
+        Point3::new(0.0, -10.0, 0.0), 10.0,
+        Rc::new(Lambertian::from_texture(checker.clone())),
+    )));
+    world.add(Box::new(Sphere::new(
+        Point3::new(0.0, 10.0, 0.0), 10.0,
+        Rc::new(Lambertian::from_texture(checker)),
+    )));
+ 
+    const IMAGE_WIDTH: usize = 400;
+    const SAMPLES_PER_PIXEL: i32 = 100;
+    const MAX_DEPTH: i32 = 50;
+    let cam = Camera::new(
+        IMAGE_WIDTH,
+        SAMPLES_PER_PIXEL,
+        MAX_DEPTH,
+        Point3::new(13.0, 2.0, 3.0),
+        Point3::new(0.0, 0.0, 0.0),
+        Vec3::new(0.0, 1.0, 0.0),
+        20.0,
+        16.0 / 9.0,
+        0.1,
+        10.0);
 
-            for _ in 0..SAMPLES_PER_PIXEL {
-                let u = (i as f64 + common::random_double()) / (IMAGE_WIDTH - 1) as f64;
-                let v = (j as f64 + common::random_double()) / (IMAGE_HEIGHT - 1) as f64;
-                let r = cam.get_ray(u, v);
-                pixel_color += ray_color(&r, &world, MAX_DEPTH);
-            }
-            color::write_color(&mut io::stdout(), pixel_color, SAMPLES_PER_PIXEL);
-        }
+    cam.render(&world);
+}
+
+fn earth() {
+    let earth_texture = Rc::new(ImageTexture::new("earthmap.jpg"));
+    let earth_surface = Rc::new(Lambertian::from_texture(earth_texture));
+    let globe = Box::new(Sphere::new(
+        Point3::new(0.0, 0.0, 0.0), 2.0, earth_surface,
+    ));
+     let mut world = HittableList::new();
+     world.add(globe);
+
+    const IMAGE_WIDTH: usize = 400;
+    const SAMPLES_PER_PIXEL: i32 = 100;
+    const MAX_DEPTH: i32 = 50;
+     let cam = Camera::new(
+        IMAGE_WIDTH,
+        SAMPLES_PER_PIXEL,
+        MAX_DEPTH,
+        Point3::new(0.0, 0.0, 12.0),
+        Point3::new(0.0, 0.0, 0.0),
+        Vec3::new(0.0, 1.0, 0.0),
+        20.0,
+        16.0 / 9.0,
+        0.1,
+        10.0);
+
+    cam.render(&world);
+}
+
+fn main() {
+    match 3 {
+        1 => bouncing_spheres(),
+        2 => checkered_spheres(),
+        3 => earth(),
+        _ => {}
     }
-    eprint!("\nDone.\n");
 }

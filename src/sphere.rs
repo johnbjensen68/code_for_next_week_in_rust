@@ -36,8 +36,21 @@ impl Sphere {
             bbox: bbox
         }
     }
+
+
 }
  
+fn get_sphere_uv(p: &Point3) -> (f64, f64) {
+    // p: a given point on the sphere of radius one, centered at the origin.
+    // u: angle around the Y axis from X=-1, mapped to [0,1].
+    // v: angle from Y=-1 to Y=+1, mapped to [0,1].
+    let theta = (-p.y()).acos();
+    let phi = (-p.z()).atan2(p.x()) + std::f64::consts::PI;
+    let u = phi / (2.0 * std::f64::consts::PI);
+    let v = theta / std::f64::consts::PI;
+    (u, v)
+}
+
 impl Hittable for Sphere {
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
         let current_center = self.center.at(r.time());
@@ -67,9 +80,14 @@ impl Hittable for Sphere {
             mat: self.mat.clone(),
             normal: Default::default(),
             front_face: Default::default(),
+            u: 0.0, // For now, since we don't need u or v
+            v: 0.0,
         };
         let outward_normal = (rec.p - current_center) / self.radius;
         rec.set_face_normal(r, outward_normal);
+        let (u, v) = get_sphere_uv(&outward_normal);
+        rec.u = u;
+        rec.v = v;
         Some(rec)
     }
 

@@ -2,6 +2,10 @@ use crate::color::Color;
 use crate::hittable::HitRecord;
 use crate::ray::Ray;
 use crate::{common, vec3};
+use crate::texture::Texture;
+use crate::texture::SolidColor;
+use std::rc::Rc;
+
 
 pub struct ScatterRecord {
     pub attenuation: Color,
@@ -20,12 +24,16 @@ fn reflectance(cosine: f64, ref_idx: f64) -> f64 {
 }
 
 pub struct Lambertian {
-    albedo: Color,
+    tex: Rc<dyn Texture>,
 }
 
 impl Lambertian {
-    pub fn new(a: Color) -> Lambertian {
-        Lambertian { albedo: a }
+    pub fn new(albedo: Color) -> Self {
+        Self { tex: Rc::new(SolidColor::new(albedo)) }
+    }
+ 
+    pub fn from_texture(tex: Rc<dyn Texture>) -> Self {
+        Self { tex }
     }
 }
 
@@ -39,7 +47,7 @@ impl Material for Lambertian {
         }
 
         Some(ScatterRecord {
-            attenuation: self.albedo,
+            attenuation: self.tex.value(rec.u, rec.v, &rec.p),
             scattered: Ray::new(rec.p, scatter_direction, r_in.time()),
         })
     }

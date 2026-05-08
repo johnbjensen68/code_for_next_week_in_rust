@@ -1,8 +1,16 @@
+use crate::color::Color;
 use crate::common;
+use crate::color;
+use crate::hittable::Hittable;
 use crate::ray::Ray;
 use crate::vec3::{self, Point3, Vec3};
- 
+ use std::io;
+
 pub struct Camera {
+    aspect_ratio: f64,
+    image_width: usize,
+    samples_per_pixel: i32,
+    max_depth: i32,
     origin: Point3,
     lower_left_corner: Point3,
     horizontal: Vec3,
@@ -14,6 +22,9 @@ pub struct Camera {
  
 impl Camera {
     pub fn new(
+        image_width: usize,
+        samples_per_pixel: i32,
+        max_depth: i32,
         lookfrom: Point3,
         lookat: Point3,
         vup: Vec3,
@@ -39,6 +50,10 @@ impl Camera {
         let lens_radius = aperture / 2.0;
  
         Camera {
+            aspect_ratio,
+            image_width,
+            samples_per_pixel,
+            max_depth,
             origin,
             lower_left_corner,
             horizontal,
@@ -49,6 +64,22 @@ impl Camera {
         }
     }
  
+    fn ray_color(&self, r: &Ray, world: &dyn Hittable, depth: i32) -> Color {
+        if depth <= 0 {
+            return Color::new(0.0, 0.0, 0.0);
+        }
+        
+        if let Some(hit_rec) = world.hit(r, 0.001, common::INFINITY) {
+            if let Some(scatter_rec) = hit_rec.mat.scatter(r, &hit_rec) {
+                return scatter_rec.attenuation * self.ray_color(&scatter_rec.scattered, world, depth - 1);
+            }
+            return Color::new(0.0, 0.0, 0.0);
+        }
+
+        let unit_direction = vec3::unit_vector(r.direction());
+        let t = 0.5 * (unit_direction.y() + 1.0);
+        (1.0 - t) * Color::new(1.0, 1.0, 1.0) + t * Color::new(0.5, 0.7, 1.0)
+    }
  
     pub fn get_ray(&self, s: f64, t: f64) -> Ray {
         let rd = self.lens_radius * vec3::random_in_unit_disk();
@@ -60,5 +91,28 @@ impl Camera {
             self.lower_left_corner + s * self.horizontal + t * self.vertical - self.origin - offset,
             ray_time
         )
+    }
+
+    pub fn render(&self, world: &dyn Hittable) {
+        let image_height: i32 = (self.image_width as f64 / self.aspect_ratio) as i32;
+
+
+        print!("P3\n{} {}\n255\n", self.image_width, image_height);
+
+        for j in (0..image_height).rev() {
+            eprint!("\rScanlines remaining: {} ", j);
+            for i in 0..self.image_width {
+                let mut pixel_color = Color::new(0.0, 0.0, 0.0);
+
+                for _ in 0..self.samples_per_pixel {
+                    let u = (i as f64 + common::random_double()) / (self.image_width - 1) as f64;
+                    let v = (j as f64 + common::random_double()) / (image_height - 1) as f64;
+                    let r = self.get_ray(u, v);
+                    pixel_color += self.ray_color(&r, world, self.max_depth);
+                }
+                color::write_color(&mut io::stdout(), pixel_color, self.samples_per_pixel);
+            }
+        }
+        eprint!("\nDone.\n");
     }
 }
