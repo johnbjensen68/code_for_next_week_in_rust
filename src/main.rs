@@ -12,6 +12,7 @@ mod aabb;
 mod bvh;
 mod texture;
 mod perlin;
+mod quad;
 
 use std::rc::Rc;
 use color::Color;
@@ -23,6 +24,7 @@ use bvh::BvhNode;
 use camera::Camera;
 use texture::CheckerTexture;
 use texture::NoiseTexture;
+use crate::quad::Quad;
 use crate::{texture::ImageTexture, vec3::Vec3};
 
 
@@ -227,12 +229,46 @@ fn perlin_spheres() {
     cam.render(&world);
 }
 
+
+fn quads() {
+    let mut world = HittableList::new();
+ 
+    // Materials
+    let left_red     = Rc::new(Lambertian::new(Color::new(1.0, 0.2, 0.2)));
+    let back_green   = Rc::new(Lambertian::new(Color::new(0.2, 1.0, 0.2)));
+    let right_blue   = Rc::new(Lambertian::new(Color::new(0.2, 0.2, 1.0)));
+    let upper_orange = Rc::new(Lambertian::new(Color::new(1.0, 0.5, 0.0)));
+    let lower_teal   = Rc::new(Lambertian::new(Color::new(0.2, 0.8, 0.8)));
+ 
+    // Quads
+    world.add(Box::new(Quad::new(Point3::new(-3.0,-2.0, 5.0), Vec3::new(0.0, 0.0,-4.0), Vec3::new(0.0, 4.0, 0.0), left_red)));
+    world.add(Box::new(Quad::new(Point3::new(-2.0,-2.0, 0.0), Vec3::new(4.0, 0.0, 0.0), Vec3::new(0.0, 4.0, 0.0), back_green)));
+    world.add(Box::new(Quad::new(Point3::new( 3.0,-2.0, 1.0), Vec3::new(0.0, 0.0, 4.0), Vec3::new(0.0, 4.0, 0.0), right_blue)));
+    world.add(Box::new(Quad::new(Point3::new(-2.0, 3.0, 1.0), Vec3::new(4.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 4.0), upper_orange)));
+    world.add(Box::new(Quad::new(Point3::new(-2.0,-3.0, 5.0), Vec3::new(4.0, 0.0, 0.0), Vec3::new(0.0, 0.0,-4.0), lower_teal)));
+ 
+    let cam = Camera::new(
+        400,
+        100,
+        50,
+        Point3::new(0.0, 0.0, 9.0),
+        Point3::new(0.0, 0.0, 0.0),
+        Vec3::new(0.0, 1.0, 0.0),
+        80.0,
+        1.0,
+        0.1,
+        10.0);
+
+    cam.render(&world);
+}
+
 fn main() {
-    match 4 {
+    match 5 {
         1 => bouncing_spheres(),
         2 => checkered_spheres(),
         3 => earth(),
         4 => perlin_spheres(),
+        5 => quads(),
         _ => {}
     }
 }

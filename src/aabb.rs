@@ -14,15 +14,22 @@ impl Aabb {
     pub const fn new(x: Interval, y: Interval, z: Interval) -> Self {
         Self { x, y, z }
     }
+    
+    pub fn from_intervals(x: Interval, y: Interval, z: Interval) -> Self {
+        let mut a = Self { x, y, z };
+        a.pad_to_minimums();
+        a
+    }
 
     pub fn from_points(a: Point3, b: Point3) -> Self {
         // Treat the two points a and b as extrema for the bounding box, so we don't
         // require a particular minimum/maximum coordinate order.
-        Self {
-            x: if a.x() <= b.x() { Interval::new(a.x(), b.x()) } else { Interval::new(b.x(), a.x()) },
-            y: if a.y() <= b.y() { Interval::new(a.y(), b.y()) } else { Interval::new(b.y(), a.y()) },
-            z: if a.z() <= b.z() { Interval::new(a.z(), b.z()) } else { Interval::new(b.z(), a.z()) },
-        }
+        let x = if a.x() <= b.x() { Interval::new(a.x(), b.x()) } else { Interval::new(b.x(), a.x()) };
+        let y = if a.y() <= b.y() { Interval::new(a.y(), b.y()) } else { Interval::new(b.y(), a.y()) };
+        let z = if a.z() <= b.z() { Interval::new(a.z(), b.z()) } else { Interval::new(b.z(), a.z()) };
+        let mut bbox = Self { x, y, z };
+        bbox.pad_to_minimums();
+        bbox
     }
     
     pub fn from_aabbs(box0: Aabb, box1: Aabb) -> Self {
@@ -31,6 +38,14 @@ impl Aabb {
             y: Interval::from_intervals(box0.y, box1.y),
             z: Interval::from_intervals(box0.z, box1.z),
         }
+    }
+
+    // Adjust the AABB so that no side is narrower than some delta, padding if necessary.
+    fn pad_to_minimums(&mut self) {
+        let delta = 0.0001;
+        if self.x.size() < delta { self.x = self.x.expand(delta); }
+        if self.y.size() < delta { self.y = self.y.expand(delta); }
+        if self.z.size() < delta { self.z = self.z.expand(delta); }
     }
 
     pub fn axis_interval(&self, n: usize) -> Interval {

@@ -32,7 +32,7 @@ impl Interval {
         x
     }
 
-    fn expand(&self, delta: f64) -> Interval {
+    pub fn expand(&self, delta: f64) -> Interval {
         let padding = delta/2.0;
         return Interval::new(self.min - padding, self.max + padding);
     }
