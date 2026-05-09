@@ -1,3 +1,4 @@
+use crate::hittable_list::HittableList;
 use crate::interval::Interval;
 use crate::vec3::{Point3, Vec3};
 use crate::aabb::Aabb;
@@ -92,4 +93,27 @@ impl Hittable for Quad {
         rec.set_face_normal(r, self.normal);
         Some(rec)
     }
+}
+
+pub fn make_box(a: Point3, b: Point3, mat: Rc<dyn Material>) -> Box<HittableList> {
+    // Returns the 3D box (six sides) that contains the two opposite vertices a & b.
+ 
+    let mut sides = HittableList::new();
+ 
+    // Construct the two opposite vertices with the minimum and maximum coordinates.
+    let min = Point3::new(a.x().min(b.x()), a.y().min(b.y()), a.z().min(b.z()));
+    let max = Point3::new(a.x().max(b.x()), a.y().max(b.y()), a.z().max(b.z()));
+ 
+    let dx = Vec3::new(max.x() - min.x(), 0.0, 0.0);
+    let dy = Vec3::new(0.0, max.y() - min.y(), 0.0);
+    let dz = Vec3::new(0.0, 0.0, max.z() - min.z());
+ 
+    sides.add(Box::new(Quad::new(Point3::new(min.x(), min.y(), max.z()),  dx,  dy, mat.clone()))); // front
+    sides.add(Box::new(Quad::new(Point3::new(max.x(), min.y(), max.z()), -dz,  dy, mat.clone()))); // right
+    sides.add(Box::new(Quad::new(Point3::new(max.x(), min.y(), min.z()), -dx,  dy, mat.clone()))); // back
+    sides.add(Box::new(Quad::new(Point3::new(min.x(), min.y(), min.z()),  dz,  dy, mat.clone()))); // left
+    sides.add(Box::new(Quad::new(Point3::new(min.x(), max.y(), max.z()),  dx, -dz, mat.clone()))); // top
+    sides.add(Box::new(Quad::new(Point3::new(min.x(), min.y(), min.z()),  dx,  dz, mat))); // bottom
+ 
+    Box::new(sides)
 }

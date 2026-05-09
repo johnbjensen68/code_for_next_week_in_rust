@@ -46,6 +46,20 @@ impl Interval {
     }
 }
 
+impl std::ops::Add<f64> for Interval {
+    type Output = Interval;
+    fn add(self, displacement: f64) -> Interval {
+        Interval::new(self.min + displacement, self.max + displacement)
+    }
+}
+ 
+impl std::ops::Add<Interval> for f64 {
+    type Output = Interval;
+    fn add(self, ival: Interval) -> Interval {
+        ival + self
+    }
+}
+
 pub const EMPTY : Interval = Interval::new(f64::INFINITY, f64::NEG_INFINITY);
 
 //const interval interval::universe = interval(-infinity, +infinity);

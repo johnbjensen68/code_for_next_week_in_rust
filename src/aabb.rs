@@ -1,6 +1,6 @@
 use crate::interval;
 use crate::interval::Interval;
-use crate::vec3::Point3;
+use crate::vec3::{Point3, Vec3};
 use crate::ray::Ray;
 
 #[derive(Clone, Copy, Default)]
@@ -83,6 +83,24 @@ impl Aabb {
         } else {
             if self.y.size() > self.z.size() { 1 } else { 2 }
         }
+    }
+}
+
+impl std::ops::Add<Vec3> for Aabb {
+    type Output = Aabb;
+    fn add(self, offset: Vec3) -> Aabb {
+        Aabb::from_intervals(
+            self.x + offset.x(),
+            self.y + offset.y(),
+            self.z + offset.z(),
+        )
+    }
+}
+ 
+impl std::ops::Add<Aabb> for Vec3 {
+    type Output = Aabb;
+    fn add(self, bbox: Aabb) -> Aabb {
+        bbox + self
     }
 }
 

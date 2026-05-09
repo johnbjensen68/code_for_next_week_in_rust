@@ -24,6 +24,9 @@ use bvh::BvhNode;
 use camera::Camera;
 use texture::CheckerTexture;
 use texture::NoiseTexture;
+use crate::hittable::Hittable;
+use crate::hittable::RotateY;
+use crate::hittable::Translate;
 use crate::material::DiffuseLight;
 use crate::quad::Quad;
 use crate::{texture::ImageTexture, vec3::Vec3};
@@ -326,8 +329,21 @@ fn cornell_box() {
     world.add(Box::new(Quad::new(Point3::new(555.0, 555.0, 555.0), Vec3::new(-555.0,  0.0, 0.0), Vec3::new(  0.0, 0.0,-555.0), white.clone())));
     world.add(Box::new(Quad::new(Point3::new(  0.0,   0.0, 555.0), Vec3::new(555.0,   0.0, 0.0), Vec3::new(  0.0, 555.0, 0.0), white.clone())));
 
+    let box1: Box<HittableList> = quad::make_box(Point3::new(0.0,0.0,0.0), Point3::new(165.0,330.0,165.0), white.clone());
+    let box1: Box<dyn Hittable> = Box::new(RotateY::new(box1, 15.0));
+    let box1: Box<dyn Hittable> = Box::new(Translate::new(box1, Vec3::new(265.0, 0.0, 295.0)));
+    world.add(box1);
+ 
+    let box2 = quad::make_box(Point3::new(0.0,0.0,0.0), Point3::new(165.0,165.0,165.0), white.clone());
+    let box2: Box<dyn Hittable> = Box::new(RotateY::new(box2, -18.0));
+    let box2: Box<dyn Hittable> = Box::new(Translate::new(box2, Vec3::new(130.0, 0.0, 65.0)));
+    world.add(box2);
+
+//    world.add(quad::make_box(Point3::new(130.0, 0.0,  65.0), Point3::new(295.0, 165.0, 230.0), white.clone()));
+//    world.add(quad::make_box(Point3::new(265.0, 0.0, 295.0), Point3::new(430.0, 330.0, 460.0), white.clone()));
+
     let cam = Camera::new(
-        300,
+        600,
         200,
         50,
         Point3::new(278.0, 278.0, -800.0),
