@@ -18,6 +18,7 @@ pub struct Camera {
     u: Vec3,
     v: Vec3,
     lens_radius: f64,
+    pub background: Color,
 }
  
 impl Camera {
@@ -32,6 +33,7 @@ impl Camera {
         aspect_ratio: f64,
         aperture: f64,
         focus_dist: f64,
+        background: Color
     ) -> Camera {
         let theta = common::degrees_to_radians(vfov);
         let h = f64::tan(theta / 2.0);
@@ -61,24 +63,25 @@ impl Camera {
             u,
             v,
             lens_radius,
+            background
         }
     }
  
-    fn ray_color(&self, r: &Ray, world: &dyn Hittable, depth: i32) -> Color {
+    fn ray_color(&self, r: &Ray, background: Color, world: &dyn Hittable, depth: i32) -> Color {
         if depth <= 0 {
             return Color::new(0.0, 0.0, 0.0);
         }
-        
-        if let Some(hit_rec) = world.hit(r, 0.001, common::INFINITY) {
-            if let Some(scatter_rec) = hit_rec.mat.scatter(r, &hit_rec) {
-                return scatter_rec.attenuation * self.ray_color(&scatter_rec.scattered, world, depth - 1);
-            }
-            return Color::new(0.0, 0.0, 0.0);
-        }
+        let Some(rec) = world.hit(r, 0.001, f64::INFINITY) else {
+            return background;
+        };
+        let color_from_emission = rec.mat.emitted(rec.u, rec.v, &rec.p);
 
-        let unit_direction = vec3::unit_vector(r.direction());
-        let t = 0.5 * (unit_direction.y() + 1.0);
-        (1.0 - t) * Color::new(1.0, 1.0, 1.0) + t * Color::new(0.5, 0.7, 1.0)
+        let Some(scatter_rec) = rec.mat.scatter(r, &rec) else  {
+            return color_from_emission;
+        };
+        let color_from_scatter =
+            scatter_rec.attenuation * self.ray_color(&scatter_rec.scattered, background, world, depth - 1);
+        color_from_emission + color_from_scatter
     }
  
     pub fn get_ray(&self, s: f64, t: f64) -> Ray {
@@ -108,7 +111,7 @@ impl Camera {
                     let u = (i as f64 + common::random_double()) / (self.image_width - 1) as f64;
                     let v = (j as f64 + common::random_double()) / (image_height - 1) as f64;
                     let r = self.get_ray(u, v);
-                    pixel_color += self.ray_color(&r, world, self.max_depth);
+                    pixel_color += self.ray_color(&r, self.background, world, self.max_depth);
                 }
                 color::write_color(&mut io::stdout(), pixel_color, self.samples_per_pixel);
             }

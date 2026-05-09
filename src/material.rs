@@ -1,6 +1,7 @@
 use crate::color::Color;
 use crate::hittable::HitRecord;
 use crate::ray::Ray;
+use crate::vec3::Point3;
 use crate::{common, vec3};
 use crate::texture::Texture;
 use crate::texture::SolidColor;
@@ -14,6 +15,9 @@ pub struct ScatterRecord {
 
 pub trait Material {
     fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<ScatterRecord>;
+    fn emitted(&self, _u: f64, _v: f64, _p: &Point3) -> Color {
+        Color::new(0.0, 0.0, 0.0)
+    }
 }
 
 fn reflectance(cosine: f64, ref_idx: f64) -> f64 {
@@ -120,5 +124,29 @@ impl Material for Dielectric {
             attenuation: Color::new(1.0, 1.0, 1.0),
             scattered: Ray::new(rec.p, direction, r_in.time()),
         })
+    }
+}
+
+pub struct DiffuseLight {
+    emit: Rc<dyn Texture>,
+}
+ 
+impl DiffuseLight {
+    pub fn new(emit: Rc<dyn Texture>) -> Self {
+        Self { emit }
+    }
+ 
+    pub fn from_color(color: Color) -> Self {
+        Self { emit: Rc::new(SolidColor::new(color)) }
+    }
+}
+ 
+impl Material for DiffuseLight {
+    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<ScatterRecord> {
+        None
+    }
+ 
+    fn emitted(&self, u: f64, v: f64, p: &Point3) -> Color {
+        self.emit.value(u, v, p)
     }
 }

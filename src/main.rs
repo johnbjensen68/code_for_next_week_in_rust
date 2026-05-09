@@ -24,6 +24,7 @@ use bvh::BvhNode;
 use camera::Camera;
 use texture::CheckerTexture;
 use texture::NoiseTexture;
+use crate::material::DiffuseLight;
 use crate::quad::Quad;
 use crate::{texture::ImageTexture, vec3::Vec3};
 
@@ -134,6 +135,7 @@ fn bouncing_spheres() {
         ASPECT_RATIO,
         aperture,
         dist_to_focus,
+        Color::new(0.70, 0.80, 1.00),
     );
 
     cam.render(&world);
@@ -169,7 +171,9 @@ fn checkered_spheres() {
         20.0,
         16.0 / 9.0,
         0.1,
-        10.0);
+        10.0,
+        Color::new(0.70, 0.80, 1.00)
+    );
 
     cam.render(&world);
 }
@@ -186,7 +190,7 @@ fn earth() {
     const IMAGE_WIDTH: usize = 400;
     const SAMPLES_PER_PIXEL: i32 = 100;
     const MAX_DEPTH: i32 = 50;
-     let cam = Camera::new(
+     let cam = Camera::new(        
         IMAGE_WIDTH,
         SAMPLES_PER_PIXEL,
         MAX_DEPTH,
@@ -196,7 +200,9 @@ fn earth() {
         20.0,
         16.0 / 9.0,
         0.1,
-        10.0);
+        10.0,
+        Color::new(0.70, 0.80, 1.00)
+    );
 
     cam.render(&world);
 }
@@ -224,7 +230,8 @@ fn perlin_spheres() {
         20.0,
         16.0 / 9.0,
         0.1,
-        10.0);
+        10.0,
+        Color::new(0.70, 0.80, 1.00));
 
     cam.render(&world);
 }
@@ -257,18 +264,93 @@ fn quads() {
         80.0,
         1.0,
         0.1,
-        10.0);
+        10.0,
+        Color::new(0.70, 0.80, 1.00));
+
+    cam.render(&world);
+}
+
+fn simple_light() {
+    let mut world = HittableList::new();
+ 
+    let pertext = Rc::new(NoiseTexture::new(4.0));
+    world.add(Box::new(Sphere::new(
+        Point3::new(0.0, -1000.0, 0.0), 1000.0,
+        Rc::new(Lambertian::from_texture(pertext.clone())),
+    )));
+    world.add(Box::new(Sphere::new(
+        Point3::new(0.0, 2.0, 0.0), 2.0,
+        Rc::new(Lambertian::from_texture(pertext)),
+    )));
+ 
+    let difflight = Rc::new(DiffuseLight::from_color(Color::new(4.0, 4.0, 4.0)));
+    world.add(Box::new(Sphere::new(
+        Point3::new(0.0, 7.0, 0.0), 2.0,
+        difflight.clone(),
+    )));
+    world.add(Box::new(Quad::new(
+        Point3::new(3.0, 1.0, -2.0),
+        Vec3::new(2.0, 0.0, 0.0),
+        Vec3::new(0.0, 2.0, 0.0),
+        difflight,
+    )));
+ 
+    let cam = Camera::new(
+        400,
+        100,
+        50,
+        Point3::new(26.0, 3.0, 6.0),
+        Point3::new(0.0, 2.0, 0.0),
+        Vec3::new(0.0, 1.0, 0.0),
+        20.0,
+        16.0 / 9.0,
+        0.1,
+        10.0,
+        Color::new(0.0, 0.0, 0.0));
+
+    cam.render(&world);
+}
+
+fn cornell_box() {
+    let mut world = HittableList::new();
+ 
+    let red   = Rc::new(Lambertian::new(Color::new(0.65, 0.05, 0.05)));
+    let white = Rc::new(Lambertian::new(Color::new(0.73, 0.73, 0.73)));
+    let green = Rc::new(Lambertian::new(Color::new(0.12, 0.80, 0.15)));
+    let light = Rc::new(DiffuseLight::from_color(Color::new(15.0, 15.0, 15.0)));
+ 
+    world.add(Box::new(Quad::new(Point3::new(555.0,   0.0,   0.0), Vec3::new(0.0, 555.0,   0.0), Vec3::new(  0.0, 0.0, 555.0), green)));
+    world.add(Box::new(Quad::new(Point3::new(  0.0,   0.0,   0.0), Vec3::new(0.0, 555.0,   0.0), Vec3::new(  0.0, 0.0, 555.0), red)));
+    world.add(Box::new(Quad::new(Point3::new(343.0, 554.0, 332.0), Vec3::new(-130.0, 0.0, 0.0), Vec3::new(  0.0, 0.0,-105.0), light)));
+    world.add(Box::new(Quad::new(Point3::new(  0.0,   0.0,   0.0), Vec3::new(555.0,   0.0, 0.0), Vec3::new(  0.0, 0.0, 555.0), white.clone())));
+    world.add(Box::new(Quad::new(Point3::new(555.0, 555.0, 555.0), Vec3::new(-555.0,  0.0, 0.0), Vec3::new(  0.0, 0.0,-555.0), white.clone())));
+    world.add(Box::new(Quad::new(Point3::new(  0.0,   0.0, 555.0), Vec3::new(555.0,   0.0, 0.0), Vec3::new(  0.0, 555.0, 0.0), white.clone())));
+
+    let cam = Camera::new(
+        300,
+        200,
+        50,
+        Point3::new(278.0, 278.0, -800.0),
+        Point3::new(278.0, 278.0, 0.0),
+        Vec3::new(0.0, 1.0, 0.0),
+        40.0,
+        1.0,
+        0.1,
+        10.0,
+        Color::new(0.0, 0.0, 0.0));
 
     cam.render(&world);
 }
 
 fn main() {
-    match 5 {
+    match 7 {
         1 => bouncing_spheres(),
         2 => checkered_spheres(),
         3 => earth(),
         4 => perlin_spheres(),
         5 => quads(),
+        6 => simple_light(),
+        7 => cornell_box(),
         _ => {}
     }
 }
