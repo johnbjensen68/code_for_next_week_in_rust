@@ -80,17 +80,16 @@ impl Hittable for Quad {
  
         let interior = Self::is_interior(alpha, beta)?;
 
-        let intersection = r.at(t);
-
-        let rec = HitRecord {
-            t: t,
+        let mut rec = HitRecord {
+            t,
             p: intersection,
             mat: self.mat.clone(),
             normal: self.normal,
             front_face: Default::default(),
-            u: interior.0, // For now, since we don't need u or v
+            u: interior.0,
             v: interior.1,
         };
+        rec.set_face_normal(r, self.normal);
         Some(rec)
     }
 }
