@@ -13,6 +13,7 @@ mod bvh;
 mod texture;
 mod perlin;
 mod quad;
+mod constant_medium;
 
 use std::rc::Rc;
 use color::Color;
@@ -24,6 +25,7 @@ use bvh::BvhNode;
 use camera::Camera;
 use texture::CheckerTexture;
 use texture::NoiseTexture;
+use crate::constant_medium::ConstantMedium;
 use crate::hittable::Hittable;
 use crate::hittable::RotateY;
 use crate::hittable::Translate;
@@ -358,8 +360,55 @@ fn cornell_box() {
     cam.render(&world);
 }
 
+
+fn cornell_smoke() {
+    let mut world = HittableList::new();
+ 
+    let red   = Rc::new(Lambertian::new(Color::new(0.65, 0.05, 0.05)));
+    let white = Rc::new(Lambertian::new(Color::new(0.73, 0.73, 0.73)));
+    let green = Rc::new(Lambertian::new(Color::new(0.12, 0.45, 0.15)));
+    let light = Rc::new(DiffuseLight::from_color(Color::new(7.0, 7.0, 7.0)));
+ 
+    world.add(Box::new(Quad::new(Point3::new(555.0,   0.0,   0.0), Vec3::new(  0.0, 555.0,   0.0), Vec3::new(  0.0,   0.0, 555.0), green)));
+    world.add(Box::new(Quad::new(Point3::new(  0.0,   0.0,   0.0), Vec3::new(  0.0, 555.0,   0.0), Vec3::new(  0.0,   0.0, 555.0), red)));
+    world.add(Box::new(Quad::new(Point3::new(113.0, 554.0, 127.0), Vec3::new(330.0,   0.0,   0.0), Vec3::new(  0.0,   0.0, 305.0), light)));
+    world.add(Box::new(Quad::new(Point3::new(  0.0, 555.0,   0.0), Vec3::new(555.0,   0.0,   0.0), Vec3::new(  0.0,   0.0, 555.0), white.clone())));
+    world.add(Box::new(Quad::new(Point3::new(  0.0,   0.0,   0.0), Vec3::new(555.0,   0.0,   0.0), Vec3::new(  0.0,   0.0, 555.0), white.clone())));
+    world.add(Box::new(Quad::new(Point3::new(  0.0,   0.0, 555.0), Vec3::new(555.0,   0.0,   0.0), Vec3::new(  0.0, 555.0,   0.0), white.clone())));
+ 
+    let box1 = quad::make_box(Point3::new(0.0,0.0,0.0), Point3::new(165.0,330.0,165.0), white.clone());
+    let box1: Box<dyn Hittable> = Box::new(RotateY::new(box1, 15.0));
+    let box1: Box<dyn Hittable> = Box::new(Translate::new(box1, Vec3::new(265.0, 0.0, 295.0)));
+ 
+    let box2 = quad::make_box(Point3::new(0.0,0.0,0.0), Point3::new(165.0,165.0,165.0), white.clone());
+    let box2: Box<dyn Hittable> = Box::new(RotateY::new(box2, -18.0));
+    let box2: Box<dyn Hittable> = Box::new(Translate::new(box2, Vec3::new(130.0, 0.0, 65.0)));
+ 
+    world.add(Box::new(ConstantMedium::from_color(box1, 0.01, Color::new(0.0, 0.0, 0.0))));
+    world.add(Box::new(ConstantMedium::from_color(box2, 0.01, Color::new(1.0, 1.0, 1.0))));
+ 
+    const IMAGE_WIDTH: usize = 600;
+    const SAMPLES_PER_PIXEL: i32 = 200;
+    const MAX_DEPTH: i32 = 50;
+    let cam = Camera::new(
+        IMAGE_WIDTH,
+        SAMPLES_PER_PIXEL,
+        MAX_DEPTH,
+        Point3::new(278.0, 278.0, -800.0),
+        Point3::new(278.0, 278.0, 0.0),
+        Vec3::new(0.0, 1.0, 0.0),
+        40.0,
+        1.0,
+        0.1,
+        10.0,
+        Color::new(0.0, 0.0, 0.0),
+    );
+ 
+    cam.render(&world);
+}
+
 fn main() {
-    match 7 {
+    match 8 {
         1 => bouncing_spheres(),
         2 => checkered_spheres(),
         3 => earth(),
@@ -367,6 +416,7 @@ fn main() {
         5 => quads(),
         6 => simple_light(),
         7 => cornell_box(),
+        8 => cornell_smoke(),
         _ => {}
     }
 }
